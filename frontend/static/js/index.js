@@ -1,3 +1,6 @@
+/** @jsx h */
+import { h, app } from "hyperapp";
+
 const audioEl = document.getElementById("audio")
 const recordStartStopBtn = document.getElementById("recordStartStopBtn")
 const uploadBtn = document.getElementById("uploadBtn")

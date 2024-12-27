@@ -1,38 +1,27 @@
 # pyre-strict
 import hashlib
-import os
 import secrets
 import string
 from datetime import datetime, timedelta
-from pathlib import Path
+from operator import attrgetter, methodcaller
 from typing import Annotated
 
-from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, Query, UploadFile
 from fastapi.templating import Jinja2Templates
-from sqlmodel import SQLModel, Session, create_engine
+from funcy import silent
+from sqlmodel import SQLModel, Session, create_engine, select
 from starlette import status
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse
 from starlette.staticfiles import StaticFiles
+from streamerate import stream
 
 from .models import PastedAudio
+from .vars import BLOB_DIR, DATABASE_URI, FASTAPI_SECRET_KEY, PROJECT_BASE
 
-load_dotenv()
-PROJECT_BASE = os.environ.get("PROJECT_BASE") or Path(__file__).parent.parent
-
-BLOB_DIR = os.environ.get("BLOB_DIR")
-assert BLOB_DIR is not None
-BLOB_DIR = Path(BLOB_DIR)
-
-DATABASE_URI = os.environ.get("DATABASE_URI")
-assert DATABASE_URI is not None
 connect_args = {"check_same_thread": False}
 engine = create_engine(DATABASE_URI, connect_args=connect_args)
-
-FASTAPI_SECRET_KEY = os.environ.get("FASTAPI_SECRET_KEY")
-assert FASTAPI_SECRET_KEY
 
 
 def create_db_and_tables():
@@ -48,7 +37,7 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 app = FastAPI()
 
-app.add_middleware(SessionMiddleware, secret_key=FASTAPI_SECRET_KEY)
+app.add_middleware(SessionMiddleware, secret_key=FASTAPI_SECRET_KEY)  # type: ignore
 templates = Jinja2Templates(directory=PROJECT_BASE / "dist" / "templates")
 static = StaticFiles(directory=PROJECT_BASE / "dist" / "assets")
 app.mount("/assets", static, name="static")
@@ -109,36 +98,34 @@ async def upload(
     return JSONResponse({"key": key}, status_code=status.HTTP_201_CREATED)
 
 
-def check_exists_and_accessible(key: str, session: Session) -> PastedAudio:
-    pasted: PastedAudio = session.get(PastedAudio, key)  # type: ignore
-    if pasted is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    if pasted.soft_deleted:
-        raise HTTPException(status_code=status.HTTP_410_GONE)
-
-    if pasted.expiration_time is not None and pasted.expiration_time < datetime.now():
-        pasted.soft_deleted = True
-        session.add(pasted)
-        session.commit()
-        raise HTTPException(status_code=status.HTTP_410_GONE)
-
-    blob_path = Path(pasted.blob_path)
-    if not blob_path.is_file():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    if not BLOB_DIR in blob_path.parents:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    return pasted
-
-
 @app.get("/user")
 async def user(request: Request) -> JSONResponse:
     return JSONResponse(request.session)
 
 
+@app.get("/mypastes")
+async def mypastes(request: Request, session: SessionDep) -> list[dict[str, str]]:
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        return []
+    pastes = session.exec(
+        select(PastedAudio)
+        .where(PastedAudio.created_by == user_id)
+        .order_by(PastedAudio.creation_time.desc())  # type: ignore
+    ).all()
+    pastes = stream(pastes).filter(silent(methodcaller("validate_access"))).toList()
+
+    d = [{"key": p.key, "url": str(request.url_for("play", key=p.key))} for p in pastes]
+    return d
+
+
 @app.get("/p/{key}")
 async def play(request: Request, key: str, session: SessionDep) -> HTMLResponse:
-    pasted = check_exists_and_accessible(key, session)
+    pasted: PastedAudio = session.get(PastedAudio, key)  # type: ignore
+    if pasted is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    pasted.validate_access()
     return templates.TemplateResponse(
         request=request,
         name="play.html",
@@ -153,8 +140,25 @@ async def play(request: Request, key: str, session: SessionDep) -> HTMLResponse:
 @app.get("/p/{key}/audio")
 async def audio(request: Request, key: str, session: SessionDep) -> FileResponse:
     # TODO two database queries per request...
-    pasted = check_exists_and_accessible(key, session)  # check exists
+    pasted: PastedAudio = session.get(PastedAudio, key)  # type: ignore
+    if pasted is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    pasted.validate_access()
     return FileResponse(pasted.blob_path, media_type="audio/webm")
+
+
+@app.get("/validate")
+async def validate(
+    keys: list[str] = Query(...), session: Session = Depends(get_session)
+) -> list[str]:
+    pastes = session.exec(select(PastedAudio).where(PastedAudio.key.in_(keys))).all()
+    return (
+        stream(pastes)
+        .filter(silent(methodcaller("validate_access")))
+        .map(attrgetter("key"))
+        .toList()
+    )
 
 
 def main():

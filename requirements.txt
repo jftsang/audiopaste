@@ -1,7 +1,9 @@
 fastapi~=0.115.6
+funcy
 itsdangerous
 Jinja2==3.1.5
 python-multipart==0.0.20
 sqlmodel
+streamerate
 starlette~=0.41.3
 uvicorn[standard]

@@ -48,7 +48,7 @@ async function loadAudio() {
   playBtn.innerText = "play/pause"
   audioDiv.appendChild(playBtn)
 
-  window.addEventListener("keypress", e => {
+  window.addEventListener("keydown", e => {
     if (e.key === " ") {
       togglePlayPause()
     }

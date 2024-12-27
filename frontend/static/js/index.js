@@ -66,11 +66,6 @@ uploadBtn.addEventListener("click", async function () {
     body: formData
   });
   const key = (await res.json()).key
-
-  const myPastes = JSON.parse(localStorage.getItem("myPastes") || "[]")
-  myPastes.push(key);
-  localStorage.setItem("myPastes", JSON.stringify(myPastes));
-
   window.location.href = `/p/${key}`
 })
 
@@ -78,19 +73,24 @@ uploadBtn.addEventListener("click", async function () {
 const myPastesUl = document.getElementById("myPastesUl")
 const recentlyViewedUl = document.getElementById("recentlyViewedUl")
 
+fetch("/mypastes").then(r => r.json()).then(
+  pastes => pastes.forEach(({key, url}) => {
+    const li = document.createElement("li")
+    li.innerHTML = `<a href="${url}">${key}</a>`
+    myPastesUl.appendChild(li)
+  })
+)
 
-const myPastes = JSON.parse(localStorage.getItem("myPastes") || "[]")
-myPastes.reverse();
-myPastes.forEach(key => {
-  const li = document.createElement("li")
-  li.innerHTML = `<a href="/p/${key}">${key}</a>`
-  myPastesUl.appendChild(li)
-})
 
 const recentlyViewed = JSON.parse(localStorage.getItem("recentlyViewed") || "[]")
-recentlyViewed.reverse();
-recentlyViewed.forEach(key => {
-  const li = document.createElement("li")
-  li.innerHTML = `<a href="/p/${key}">${key}</a>`
-  recentlyViewedUl.appendChild(li)
-})
+const validateUrl = new URL(window.location.href)
+validateUrl.pathname = "/validate"
+recentlyViewed.forEach(key => validateUrl.searchParams.append("keys", key))
+
+fetch(validateUrl).then(r => r.json()).then(
+  keys => keys.forEach(key => {
+    const li = document.createElement("li")
+    li.innerHTML = `<a href="/p/${key}">${key}</a>`
+    recentlyViewedUl.appendChild(li)
+  })
+)

@@ -14,9 +14,11 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse
 from starlette.staticfiles import StaticFiles
 
-from models import PastedAudio
+from .models import PastedAudio
 
 load_dotenv()
+PROJECT_BASE = os.environ.get("PROJECT_BASE") or Path(__file__).parent.parent
+
 BLOB_DIR = os.environ.get("BLOB_DIR")
 assert BLOB_DIR is not None
 BLOB_DIR = Path(BLOB_DIR)
@@ -39,10 +41,9 @@ def get_session():
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
-
 app = FastAPI()
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=PROJECT_BASE / "frontend" / "templates")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 

@@ -1,12 +1,44 @@
+# pyre-strict
 import hashlib
+import os
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, UploadFile
+from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, HTTPException, UploadFile
 from fastapi.templating import Jinja2Templates
+from sqlmodel import SQLModel, Session, create_engine
 from starlette import status
 from starlette.requests import Request
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse
 from starlette.staticfiles import StaticFiles
+
+from models import PastedAudio
+
+load_dotenv()
+BLOB_DIR = os.environ.get("BLOB_DIR")
+assert BLOB_DIR is not None
+BLOB_DIR = Path(BLOB_DIR)
+
+DATABASE_URI = os.environ.get("DATABASE_URI")
+assert DATABASE_URI is not None
+
+connect_args = {"check_same_thread": False}
+engine = create_engine(DATABASE_URI, connect_args=connect_args)
+
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+
+SessionDep = Annotated[Session, Depends(get_session)]
+
 
 app = FastAPI()
 
@@ -14,8 +46,11 @@ templates = Jinja2Templates(directory="templates")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-data_dir = Path("data")
-data_dir.mkdir(exist_ok=True)
+
+@app.on_event("startup")
+def on_startup():
+    BLOB_DIR.mkdir(exist_ok=True)
+    create_db_and_tables()
 
 
 @app.get("/")
@@ -24,7 +59,9 @@ async def index(request: Request) -> HTMLResponse:
 
 
 @app.post("/upload")
-async def upload(audio: UploadFile) -> JSONResponse:
+async def upload(
+    request: Request, audio: UploadFile, session: SessionDep
+) -> JSONResponse:
     # validate the file type
     assert audio.content_type == "audio/webm"
     assert audio.size <= 1024 * 1024  # 1 MB
@@ -40,18 +77,44 @@ async def upload(audio: UploadFile) -> JSONResponse:
     key = hashlib.sha256(content).hexdigest()[:8]
     filename = key + ".webm"
 
+    blob_path = BLOB_DIR / filename
+
     # save the file to disk
-    with open(data_dir / filename, "wb") as f:
+    with open(BLOB_DIR / filename, "wb") as f:
         f.write(content)
+
+    # create the database record
+    pasted_audio = PastedAudio(key=key, blob_path=str(blob_path))
+    pasted_audio.creation_time = datetime.now()
+    pasted_audio.created_by = request.client.host
+    pasted_audio.expiration_time = datetime.now() + timedelta(hours=1)
+    session.add(pasted_audio)
+    session.commit()
 
     return JSONResponse({"key": key}, status_code=status.HTTP_201_CREATED)
 
 
-@app.get("/p/{key}")
-async def play(request: Request, key: str) -> HTMLResponse:
-    file_path = data_dir / (key + ".webm")
-    if not (file_path).exists():
+def get_pasted_by_key(key: str, session: Session) -> PastedAudio:
+    pasted: PastedAudio = session.get(PastedAudio, key)  # type: ignore
+    if pasted is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    if pasted.soft_deleted:
+        raise HTTPException(status_code=status.HTTP_410_GONE)
+
+    if pasted.expiration_time is not None and pasted.expiration_time < datetime.now():
+        pasted.soft_deleted = True
+        session.add(pasted)
+        session.commit()
+        raise HTTPException(status_code=status.HTTP_410_GONE)
+
+    blob_path = Path(pasted.blob_path)
+    assert blob_path.is_file() and BLOB_DIR in blob_path.parents
+    return pasted
+
+
+@app.get("/p/{key}")
+async def play(request: Request, key: str, session: SessionDep) -> HTMLResponse:
     return templates.TemplateResponse(
         request=request,
         name="play.html",
@@ -60,12 +123,10 @@ async def play(request: Request, key: str) -> HTMLResponse:
 
 
 @app.get("/p/{key}/audio")
-async def audio(request: Request, key: str) -> FileResponse:
-    file_path = data_dir / (key + ".webm")
-    if not (file_path).exists():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    return FileResponse(file_path, media_type="audio/webm")
+async def audio(request: Request, key: str, session: SessionDep) -> FileResponse:
+    # TODO two database queries per request...
+    pasted = get_pasted_by_key(key, session)  # check exists
+    return FileResponse(pasted.blob_path, media_type="audio/webm")
 
 
 def main():

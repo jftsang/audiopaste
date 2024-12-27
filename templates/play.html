@@ -6,10 +6,19 @@
 </head>
 <body>
 
-<audio controls>
-    <source src="{{ audio_url }}" type="audio/webm">
-    Your browser does not support the audio element.
-</audio>
+<div id="contentDiv">
+    <input id="url" readonly style="width: 500px">
+    <input id="key" value="{{ key }}" readonly hidden>
+    <input id="audioUrl" value="{{ audio_url }}" readonly hidden>
+    <button id="copyBtn">copy</button>
+    <button id="reportBtn">report</button>
+</div>
+
+<div>
+</div>
+<div><a href="{{ url_for("index") }}">Index</a></div>
+
+<script src="/static/js/play.js"></script>
 
 </body>
 </html>

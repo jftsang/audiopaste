@@ -1,17 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ key }}</title>
-</head>
-<body>
-
+{% extends "base.html" %}
+{% block body %}
 <div id="contentDiv">
     <input id="url" readonly style="width: 500px">
     <input id="key" value="{{ key }}" readonly hidden>
     <input id="audioUrl" value="{{ audio_url }}" readonly hidden>
     <button id="copyBtn">copy</button>
-    <button id="reportBtn">report</button>
 </div>
 
 <div>
@@ -20,5 +13,4 @@
 
 <script src="/static/js/play.js"></script>
 
-</body>
-</html>
+{% endblock %}

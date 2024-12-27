@@ -1,6 +1,8 @@
 # pyre-strict
 import hashlib
 import os
+import secrets
+import string
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Annotated
@@ -10,6 +12,7 @@ from fastapi import Depends, FastAPI, HTTPException, UploadFile
 from fastapi.templating import Jinja2Templates
 from sqlmodel import SQLModel, Session, create_engine
 from starlette import status
+from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import FileResponse, HTMLResponse, JSONResponse
 from starlette.staticfiles import StaticFiles
@@ -25,9 +28,11 @@ BLOB_DIR = Path(BLOB_DIR)
 
 DATABASE_URI = os.environ.get("DATABASE_URI")
 assert DATABASE_URI is not None
-
 connect_args = {"check_same_thread": False}
 engine = create_engine(DATABASE_URI, connect_args=connect_args)
+
+FASTAPI_SECRET_KEY = os.environ.get("FASTAPI_SECRET_KEY")
+assert FASTAPI_SECRET_KEY
 
 
 def create_db_and_tables():
@@ -43,9 +48,9 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 app = FastAPI()
 
+app.add_middleware(SessionMiddleware, secret_key=FASTAPI_SECRET_KEY)
 templates = Jinja2Templates(directory=PROJECT_BASE / "dist" / "templates")
 static = StaticFiles(directory=PROJECT_BASE / "dist" / "assets")
-
 app.mount("/assets", static, name="static")
 
 
@@ -88,7 +93,15 @@ async def upload(
     # create the database record
     pasted_audio = PastedAudio(key=key, blob_path=str(blob_path))
     pasted_audio.creation_time = datetime.now()
-    pasted_audio.created_by = request.client.host
+
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        # set a session cookie if they haven't visited before
+        characters = string.ascii_letters + string.digits
+        user_id = "".join(secrets.choice(characters) for _ in range(32))
+        request.session["user_id"] = user_id
+
+    pasted_audio.created_by = user_id
     pasted_audio.expiration_time = datetime.now() + timedelta(hours=1)
     session.add(pasted_audio)
     session.commit()
@@ -116,6 +129,11 @@ def check_exists_and_accessible(key: str, session: Session) -> PastedAudio:
     if not BLOB_DIR in blob_path.parents:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     return pasted
+
+
+@app.get("/user")
+async def user(request: Request) -> JSONResponse:
+    return JSONResponse(request.session)
 
 
 @app.get("/p/{key}")

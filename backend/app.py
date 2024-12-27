@@ -44,8 +44,9 @@ SessionDep = Annotated[Session, Depends(get_session)]
 app = FastAPI()
 
 templates = Jinja2Templates(directory=PROJECT_BASE / "frontend" / "templates")
+static = StaticFiles(directory=PROJECT_BASE / "frontend" / "static")
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", static, name="static")
 
 
 @app.on_event("startup")

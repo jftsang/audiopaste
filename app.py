@@ -94,7 +94,7 @@ async def upload(
     return JSONResponse({"key": key}, status_code=status.HTTP_201_CREATED)
 
 
-def get_pasted_by_key(key: str, session: Session) -> PastedAudio:
+def check_exists_and_accessible(key: str, session: Session) -> PastedAudio:
     pasted: PastedAudio = session.get(PastedAudio, key)  # type: ignore
     if pasted is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -109,23 +109,31 @@ def get_pasted_by_key(key: str, session: Session) -> PastedAudio:
         raise HTTPException(status_code=status.HTTP_410_GONE)
 
     blob_path = Path(pasted.blob_path)
-    assert blob_path.is_file() and BLOB_DIR in blob_path.parents
+    if not blob_path.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if not BLOB_DIR in blob_path.parents:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     return pasted
 
 
 @app.get("/p/{key}")
 async def play(request: Request, key: str, session: SessionDep) -> HTMLResponse:
+    pasted = check_exists_and_accessible(key, session)
     return templates.TemplateResponse(
         request=request,
         name="play.html",
-        context={"key": key, "audio_url": request.url_for("audio", key=key)},
+        context={
+            "key": key,
+            "pasted": pasted,
+            "audio_url": request.url_for("audio", key=key),
+        },
     )
 
 
 @app.get("/p/{key}/audio")
 async def audio(request: Request, key: str, session: SessionDep) -> FileResponse:
     # TODO two database queries per request...
-    pasted = get_pasted_by_key(key, session)  # check exists
+    pasted = check_exists_and_accessible(key, session)  # check exists
     return FileResponse(pasted.blob_path, media_type="audio/webm")
 
 

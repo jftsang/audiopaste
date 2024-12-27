@@ -1,4 +1,9 @@
+import WaveSurfer from "https://unpkg.com/wavesurfer.js@7.8.13/dist/wavesurfer.esm.js"
+import spectrogram from "https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.js"
+
+
 const contentDiv = document.getElementById("contentDiv")
+const audioDiv = document.getElementById("audioDiv")
 const key = document.getElementById("key").value
 const audioUrl = document.getElementById("audioUrl").value
 
@@ -11,16 +16,52 @@ async function loadAudio() {
     return false;
   }
   if (!response.ok) {
-    const errorMessage = (await response.json()).detail;
-    contentDiv.innerText = errorMessage;
+    contentDiv.innerText = (await response.json()).detail;
     return false;
   }
+  //
 
-  const audioBlob = await response.blob();
-  const audioUrlObject = URL.createObjectURL(audioBlob);
-  const audioEl = new Audio(audioUrlObject);
-  audioEl.controls = true;
-  contentDiv.appendChild(audioEl);
+  const wavesurfer = WaveSurfer.create({
+    container: audioDiv,
+    waveColor: 'rgb(200, 0, 200)',
+    progressColor: 'rgb(100, 0, 100)',
+    url: audioUrl,
+  })
+  wavesurfer.on('click', () => {
+    if (wavesurfer.isPlaying())
+      wavesurfer.pause()
+  })
+  wavesurfer.registerPlugin(
+    spectrogram.create({
+      labels: true,
+      height: 100,
+      splitChannels: true,
+      scale: 'linear', // or 'mel'
+      frequencyMax: 8000,
+      frequencyMin: 0,
+      fftSamples: 1024,
+      labelsBackground: 'rgba(0, 0, 0, 0.1)',
+    }),
+  )
+
+  const playBtn = document.createElement("button")
+  playBtn.innerText = "play/pause"
+  audioDiv.appendChild(playBtn)
+
+  window.addEventListener("keypress", e => {
+    if (e.key === " ") {
+      togglePlayPause()
+    }
+  })
+  playBtn.addEventListener("click", togglePlayPause)
+
+  function togglePlayPause() {
+    if (wavesurfer.isPlaying())
+      wavesurfer.pause()
+    else
+      wavesurfer.play()
+  }
+
 
   const input = document.getElementById("url");
   const copyBtn = document.getElementById("copyBtn")
@@ -34,7 +75,7 @@ async function loadAudio() {
 
 function updateRecentlyViewed(successful) {
   const recentlyViewed = JSON.parse(localStorage.getItem("recentlyViewed") || "[]")
-  idx = recentlyViewed.indexOf(key);
+  const idx = recentlyViewed.indexOf(key);
   if (idx >= 0) {
     recentlyViewed.splice(idx, 1);
   }

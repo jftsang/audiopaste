@@ -1,6 +1,56 @@
 /** @jsx h */
 import main from "./main.js";
-import { h, app } from "hyperapp";
+import {h, app, text} from "hyperapp";
+
+const recorderDiv = document.getElementById("recorderDiv")
+
+const state = {
+  isRecording: false,
+  recorder: null,
+  blob: null
+}
+
+const view = (state) => {
+  const audioPreview = h("audio", {
+    id: "audio",
+    controls: true,
+    class: "w-100",
+    style: {maxWidth: "300px"}
+  })
+  const recordStartStopBtn = h("button", {
+    id: "recordStartStopBtn",
+    class: "btn btn-primary mx-2"
+  }, [text("Record")])
+  const uploadBtn = h("button", {
+    id: "uploadBtn",
+    class: "btn btn-success mx-2",
+    disabled: true
+  }, [text("Upload")])
+  const pitchPipeBtn = h("button", {
+    id: "pitchPipeBtn",
+    class: "btn btn-secondary mx-2",
+    dataBsToggle: "tooltip",
+    dataBsPlacement: "bottom",
+    title: "A440"
+  }, [
+    h("i", {class: "bi bi-music-note"}),
+    text("A")
+  ])
+
+  return h("main", {}, [
+    h("div", {class: "d-flex justify-content-center mb-3"}, [
+      audioPreview
+    ]),
+    h("div", {class: "d-flex justify-content-center mb-3"}, [
+      recordStartStopBtn,
+      uploadBtn,
+      pitchPipeBtn,
+    ])
+  ])
+}
+
+
+app({init: state, view, node: recorderDiv})
 
 const audioEl = document.getElementById("audio")
 const recordStartStopBtn = document.getElementById("recordStartStopBtn")
@@ -94,6 +144,7 @@ function stopTone() {
     oscillator = null;
   }
 }
+
 pitchPipeBtn.addEventListener("mousedown", startTone);
 pitchPipeBtn.addEventListener("touchstart", startTone);
 // pitchPipeBtn.addEventListener("mouseup", stopTone);

@@ -51,9 +51,7 @@ async function stopRecording() {
 
 
 uploadBtn.addEventListener("click", async function () {
-  const blobURL = audioEl.src;
-
-  if (!blobURL) {
+  if (!audioEl.src) {
     console.log("No audio file");
     return;
   }

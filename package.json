@@ -4,12 +4,15 @@
   "description": "audio pastebin",
   "main": "index.js",
   "scripts": {
-    "build": "npx vite build",
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "jmft.dev",
   "license": "MIT",
   "dependencies": {
+    "bootstrap": "^5.3.3",
     "hyperapp": "^2.0.22"
   },
   "devDependencies": {

@@ -1,18 +1,27 @@
 {% extends 'base.html' %}
 {% block body %}
-<h1>audiopaste</h1>
-<audio id="audio" controls></audio>
-<button id="recordStartStopBtn">Record</button>
-<button id="uploadBtn">Upload</button>
+<h1 class="text-center mb-4">audiopaste</h1>
+
+<div class="d-flex justify-content-center mb-3">
+  <audio id="audio" controls class="w-100" style="max-width: 300px;"></audio>
+</div>
+
+
+<div class="d-flex justify-content-center mb-3">
+  <button id="recordStartStopBtn" class="btn btn-primary mx-2">Record</button>
+  <button id="uploadBtn" class="btn btn-success mx-2">Upload</button>
+</div>
+
+<div class="row mt-5">
+  <div class="col-12 col-md-6 mb-4">
+    <h2 class="text-center">My pastes</h2>
+    <div id="myPastesUl" class="list-group"></div>
+  </div>
+  <div class="col-12 col-md-6 mb-4">
+    <h2 class="text-center">Recently viewed</h2>
+    <div id="recentlyViewedUl" class="list-group"></div>
+  </div>
+</div>
 
 <script src="/static/js/index.js" type="module"></script>
-
-<h2>My pastes</h2>
-
-<ul id="myPastesUl"></ul>
-
-<h2>Recently viewed</h2>
-
-<ul id="recentlyViewedUl"></ul>
-
 {% endblock %}

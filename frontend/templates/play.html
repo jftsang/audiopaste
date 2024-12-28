@@ -1,21 +1,37 @@
 {% extends "base.html" %}
 {% block body %}
-<div id="contentDiv">
-    <div id="audioDiv"></div>
-    <input id="url" readonly style="width: 500px">
+<div class="container mt-4">
+  <h1 class="text-center mb-4">Play Audio</h1>
+
+  <div class="justify-content-center mb-12">
+    <div id="audioDiv" class="text-center"></div>
+  </div>
+
+  <div class="mb-3">
+    <label for="url" class="form-label">Audio URL</label>
+    <input id="url" class="form-control" readonly style="max-width: 500px;">
+  </div>
+
+  <div class="mb-3">
     <input id="key" value="{{ key }}" readonly hidden>
     <input id="audioUrl" value="{{ audio_url }}" readonly hidden>
-    <button id="copyBtn">copy</button>
-    <button id="copyDirectLinkBtn">copy direct link</button>
-    <button id="downloadBtn">download</button>
-    <p>Pasted at {{ pasted.creation_time }}</p>
-    <p>Expires at {{ pasted.expiration_time }}</p>
-</div>
+  </div>
 
-<div>
+  <div class="mb-3 d-flex justify-content-center">
+    <button id="copyBtn" class="btn btn-primary mx-2">Copy</button>
+    <button id="copyDirectLinkBtn" class="btn btn-secondary mx-2">Copy Direct Link</button>
+    <button id="downloadBtn" class="btn btn-success mx-2">Download</button>
+  </div>
+
+  <div class="mt-4">
+    <p><strong>Pasted at:</strong> {{ pasted.creation_time }}</p>
+    <p><strong>Expires at:</strong> {{ pasted.expiration_time }}</p>
+  </div>
+
+  <div class="mt-4">
+    <a href="{{ url_for('index') }}" class="btn btn-link">Back to Index</a>
+  </div>
 </div>
-<div><a href="{{ url_for('index') }}">Index</a></div>
 
 <script src="/static/js/play.js" type="module"></script>
-
 {% endblock %}

@@ -4,6 +4,7 @@ export default {
   root: 'frontend',
   build: {
     outDir: '../dist',  // Specify the output directory outside of 'frontend' (can be adjusted)
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         base: path.resolve(__dirname, 'frontend/templates/base.html'),

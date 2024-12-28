@@ -1,3 +1,5 @@
+// noinspection ES6UnusedImports
+import main from "./main.js";
 import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js"
 import spectrogram from "https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.js"
 

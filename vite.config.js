@@ -12,6 +12,7 @@ export default {
         base: path.resolve(__dirname, 'frontend/templates/base.html'),
         index: path.resolve(__dirname, 'frontend/templates/index.html'),
         play: path.resolve(__dirname, 'frontend/templates/play.html'),
+        privacy: path.resolve(__dirname, 'frontend/templates/privacy.html'),
       },
     },
   },

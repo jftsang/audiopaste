@@ -93,6 +93,6 @@ function stopTone() {
 }
 pitchPipeBtn.addEventListener("mousedown", startTone);
 pitchPipeBtn.addEventListener("touchstart", startTone);
-pitchPipeBtn.addEventListener("mouseup", stopTone);
-pitchPipeBtn.addEventListener("touchend", stopTone);
-pitchPipeBtn.addEventListener("mouseleave", stopTone); // For mouse leave
+// pitchPipeBtn.addEventListener("mouseup", stopTone);
+// pitchPipeBtn.addEventListener("touchend", stopTone);
+// pitchPipeBtn.addEventListener("mouseleave", stopTone); // For mouse leave

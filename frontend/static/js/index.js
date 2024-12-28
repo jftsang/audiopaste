@@ -59,7 +59,7 @@ uploadBtn.addEventListener("click", async function () {
 
   const formData = new FormData();
 
-  formData.append("audio", blob, "recorded.wav");
+  formData.append("audio", blob, "recorded.webm");
 
   const res = await fetch("/upload", {
     method: "POST",

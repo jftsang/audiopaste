@@ -7,6 +7,31 @@ const audioDiv = document.getElementById("audioDiv")
 const key = document.getElementById("key").value
 const audioUrl = document.getElementById("audioUrl").value
 
+function createSpectrogram(container, content) {
+  const wavesurfer = WaveSurfer.create({
+    container: container,
+    waveColor: 'rgb(200, 0, 200)',
+    progressColor: 'rgb(100, 0, 100)',
+    url: content,
+  })
+  wavesurfer.on('click', () => {
+    if (wavesurfer.isPlaying())
+      wavesurfer.pause()
+  })
+  wavesurfer.registerPlugin(
+    spectrogram.create({
+      labels: true,
+      height: 100,
+      scale: 'mel', // 'linear' or 'mel'
+      frequencyMin: 24,
+      frequencyMax: 24000,
+      fftSamples: 2048,
+      labelsBackground: 'rgba(0, 0, 0, 0.1)',
+    }),
+  )
+  return wavesurfer
+}
+
 async function loadAudio() {
   let response;
   try {
@@ -21,28 +46,7 @@ async function loadAudio() {
   }
   //
 
-  const wavesurfer = WaveSurfer.create({
-    container: audioDiv,
-    waveColor: 'rgb(200, 0, 200)',
-    progressColor: 'rgb(100, 0, 100)',
-    url: audioUrl,
-  })
-  wavesurfer.on('click', () => {
-    if (wavesurfer.isPlaying())
-      wavesurfer.pause()
-  })
-  wavesurfer.registerPlugin(
-    spectrogram.create({
-      labels: true,
-      height: 100,
-      splitChannels: true,
-      scale: 'linear', // or 'mel'
-      frequencyMax: 8000,
-      frequencyMin: 0,
-      fftSamples: 1024,
-      labelsBackground: 'rgba(0, 0, 0, 0.1)',
-    }),
-  )
+  const wavesurfer = createSpectrogram(audioDiv, audioUrl);
 
   const playBtn = document.createElement("button")
   playBtn.innerText = "play/pause"
@@ -68,6 +72,14 @@ async function loadAudio() {
   input.value = window.location.href;
   copyBtn.addEventListener("click", async () => {
     await navigator.clipboard.writeText(input.value)
+  })
+  const copyDirectLinkBtn = document.getElementById("copyDirectLinkBtn")
+  copyDirectLinkBtn.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(audioUrl)
+  })
+  const downloadBtn = document.getElementById("downloadBtn")
+  downloadBtn.addEventListener("click", () => {
+    window.open(audioUrl)
   })
 
   return true;

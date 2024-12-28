@@ -1,4 +1,4 @@
-import WaveSurfer from "https://unpkg.com/wavesurfer.js@7.8.13/dist/wavesurfer.esm.js"
+import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js"
 import spectrogram from "https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.js"
 
 
@@ -33,18 +33,6 @@ function createSpectrogram(container, content) {
 }
 
 async function loadAudio() {
-  let response;
-  try {
-    response = await fetch(audioUrl);
-  } catch (fetchError) {
-    contentDiv.innerText = `Failed to load audio: ${fetchError.message}`;
-    return false;
-  }
-  if (!response.ok) {
-    contentDiv.innerText = (await response.json()).detail;
-    return false;
-  }
-  //
 
   const wavesurfer = createSpectrogram(audioDiv, audioUrl);
 

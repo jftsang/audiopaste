@@ -133,7 +133,7 @@ async def upload(
     pasted_audio.creation_time = datetime.now()
 
     pasted_audio.created_by = get_or_create_user_id(request)
-    pasted_audio.expiration_time = datetime.now() + timedelta(days=7)
+    pasted_audio.expiration_time = datetime.now() + timedelta(days=30)
     session.add(pasted_audio)
     session.commit()
 
@@ -201,6 +201,11 @@ async def validate(
         .map(attrgetter("key"))
         .toList()
     )
+
+
+@app.get("/privacy")
+async def privacy(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse("privacy.html", {"request": request})
 
 
 def main():

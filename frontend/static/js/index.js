@@ -47,6 +47,7 @@ async function startRecording() {
 async function stopRecording() {
   recorder.stop();
   recorder = null;
+  uploadBtn.disabled = false;
 }
 
 

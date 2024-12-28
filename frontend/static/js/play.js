@@ -1,7 +1,7 @@
 // noinspection ES6UnusedImports
 import main from "./main.js";
 import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js"
-import spectrogram from "https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.js"
+// import spectrogram from "https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.js"
 
 
 const contentDiv = document.getElementById("contentDiv")
@@ -20,6 +20,7 @@ function createSpectrogram(container, content) {
     if (wavesurfer.isPlaying())
       wavesurfer.pause()
   })
+  /*
   wavesurfer.registerPlugin(
     spectrogram.create({
       labels: true,
@@ -31,6 +32,7 @@ function createSpectrogram(container, content) {
       labelsBackground: 'rgba(0, 0, 0, 0.1)',
     }),
   )
+   */
   return wavesurfer
 }
 

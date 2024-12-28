@@ -70,11 +70,11 @@ uploadBtn.addEventListener("click", async function () {
 })
 
 const pitchPipeBtn = document.getElementById("pitchPipeBtn")
+let oscillator = null
 
-pitchPipeBtn.addEventListener("click", async () => {
-  // play a 440 Hz note
+function startTone() {
   const audioCtx = new AudioContext();
-  const oscillator = audioCtx.createOscillator();
+  oscillator = audioCtx.createOscillator();
   const gainNode = audioCtx.createGain();
   oscillator.connect(gainNode);
   gainNode.connect(audioCtx.destination);
@@ -82,5 +82,17 @@ pitchPipeBtn.addEventListener("click", async () => {
   oscillator.frequency.value = 440;
   gainNode.gain.value = 0.5;
   oscillator.start();
-  setTimeout(() => {oscillator.stop();}, 400);
-});
+  setTimeout(stopTone, 1000);
+}
+
+function stopTone() {
+  if (oscillator) {
+    oscillator.stop();
+    oscillator = null;
+  }
+}
+pitchPipeBtn.addEventListener("mousedown", startTone);
+pitchPipeBtn.addEventListener("touchstart", startTone);
+pitchPipeBtn.addEventListener("mouseup", stopTone);
+pitchPipeBtn.addEventListener("touchend", stopTone);
+pitchPipeBtn.addEventListener("mouseleave", stopTone); // For mouse leave

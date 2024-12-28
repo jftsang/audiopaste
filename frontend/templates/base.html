@@ -16,9 +16,22 @@
   {% block body %}
   {% endblock %}
 </div>
-<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>-->
 
-<div class="footnotes container mt-4 card-footer list-group list-group-horizontal justify-content-center">
+<div class="container justify-content-center">
+  <div class="row m-5">
+    <div class="col-8 col-md-6 mb-4">
+      <h2 class="text-center">My pastes</h2>
+      <div id="myPastesUl" class="list-group"></div>
+    </div>
+    <div class="col-8 col-md-6 mb-4">
+      <h2 class="text-center">Recently viewed</h2>
+      <div id="recentlyViewedUl" class="list-group"></div>
+    </div>
+  </div>
+</div>
+
+<div
+  class="footnotes container mt-4 card-footer list-group list-group-horizontal justify-content-center">
   <div class="list-item">
     <a href="{{ url_for('index') }}" class="btn btn-link">index</a>
   </div>
@@ -27,5 +40,6 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

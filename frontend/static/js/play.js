@@ -45,6 +45,7 @@ async function loadAudio() {
   window.addEventListener("keypress", e => {
     if (e.key === " ") {
       togglePlayPause()
+      e.preventDefault()  // no scroll
     }
   })
   playBtn.addEventListener("click", togglePlayPause)

@@ -15,3 +15,10 @@ assert DATABASE_URI is not None
 
 FASTAPI_SECRET_KEY = os.environ.get("FASTAPI_SECRET_KEY")
 assert FASTAPI_SECRET_KEY
+
+AUDIOPASTE_HOST = os.environ.get("AUDIOPASTE_HOST", "0.0.0.0")
+assert AUDIOPASTE_HOST is not None
+
+AUDIOPASTE_PORT = os.environ.get("AUDIOPASTE_PORT", 8000)
+assert AUDIOPASTE_PORT is not None
+AUDIOPASTE_PORT = int(AUDIOPASTE_PORT)

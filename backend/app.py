@@ -20,7 +20,7 @@ from starlette.staticfiles import StaticFiles
 from streamerate import stream
 
 from .models import PastedAudio
-from .vars import BLOB_DIR, DATABASE_URI, FASTAPI_SECRET_KEY, PROJECT_BASE
+from .vars import AUDIOPASTE_HOST, AUDIOPASTE_PORT, BLOB_DIR, DATABASE_URI, FASTAPI_SECRET_KEY, PROJECT_BASE
 
 connect_args = {"check_same_thread": False}
 engine = create_engine(DATABASE_URI, connect_args=connect_args)
@@ -213,8 +213,8 @@ def main():
 
     uvicorn.run(
         app,
-        host="0.0.0.0",
-        port=8000,
+        host=AUDIOPASTE_HOST,
+        port=AUDIOPASTE_PORT,
     )
 
 

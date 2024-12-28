@@ -68,3 +68,19 @@ uploadBtn.addEventListener("click", async function () {
   const key = (await res.json()).key
   window.location.href = `/p/${key}`
 })
+
+const pitchPipeBtn = document.getElementById("pitchPipeBtn")
+
+pitchPipeBtn.addEventListener("click", async () => {
+  // play a 440 Hz note
+  const audioCtx = new AudioContext();
+  const oscillator = audioCtx.createOscillator();
+  const gainNode = audioCtx.createGain();
+  oscillator.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  oscillator.type = "triangle";
+  oscillator.frequency.value = 440;
+  gainNode.gain.value = 0.5;
+  oscillator.start();
+  setTimeout(() => {oscillator.stop();}, 400);
+});

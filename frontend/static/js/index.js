@@ -73,6 +73,9 @@ const pitchPipeBtn = document.getElementById("pitchPipeBtn")
 let oscillator = null
 
 function startTone() {
+  if (oscillator) {
+    return
+  }
   const audioCtx = new AudioContext();
   oscillator = audioCtx.createOscillator();
   const gainNode = audioCtx.createGain();

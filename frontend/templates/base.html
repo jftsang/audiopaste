@@ -13,6 +13,15 @@
 </head>
 <body>
 <div class="container mt-4">
+    <h1 class="text-center mb-1">
+        <a href="{{ url_for('index') }}" 
+           class="link-underline link-underline-opacity-0"
+           style="color: black;">
+            audiopaste
+        </a>
+    </h1>
+  <p class="text-center mt-0">Share audio clips</p>
+
   {% block body %}
   {% endblock %}
 </div>
@@ -34,6 +43,9 @@
   class="footnotes container mt-4 card-footer list-group list-group-horizontal justify-content-center">
   <div class="list-item">
     <a href="{{ url_for('index') }}" class="btn btn-link">index</a>
+  </div>
+  <div class="list-item">
+    <a href="https://github.com/jftsang/audiopaste" class="btn btn-link">github</a>
   </div>
   <div class="list-item">
     <a href="{{ url_for('privacy') }}" class="btn btn-link">privacy policy</a>

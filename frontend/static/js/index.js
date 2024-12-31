@@ -1,105 +1,130 @@
 /** @jsx h */
-import main from "./main.js";
-import {h, app, text} from "hyperapp";
+import {app, h, text} from "hyperapp";
 
 const recorderDiv = document.getElementById("recorderDiv")
 
-const state = {
-  isRecording: false,
+const initialState = {
   recorder: null,
-  blob: null
+  blob: null,
+  oscillator: null,
 }
 
-const view = (state) => {
+const view = (state, actions) => {
+  console.log(state)
+  const audioURL = state.blob ? window.URL.createObjectURL(state.blob) : null;
+
   const audioPreview = h("audio", {
     id: "audio",
+    src: audioURL,
     controls: true,
     class: "w-100",
     style: {maxWidth: "300px"}
   })
+
+  // Update the button handler to use actions directly
+  const handleRecordStartStopBtn = () => {
+    if (state.recorder !== null && state.recorder !== "initializing") {
+      state.recorder.stop();
+      actions.setRecorder(null);  // Stop recording and reset recorder state
+    } else {
+      actions.requestRecorder();  // Start recording
+    }
+  };
+
+  const label = (
+    state.recorder === null ? "Record" : (
+      state.recorder === "initializing" ? "Initializing..." : "Stop"
+    )
+  )
   const recordStartStopBtn = h("button", {
     id: "recordStartStopBtn",
-    class: "btn btn-primary mx-2"
-  }, [text("Record")])
+    class: "btn btn-primary mx-2",
+    onclick: handleRecordStartStopBtn,
+  }, [text(label)]);
+
   const uploadBtn = h("button", {
     id: "uploadBtn",
     class: "btn btn-success mx-2",
-    disabled: true
-  }, [text("Upload")])
+    disabled: (state.blob === null)
+  }, [text("Upload")]);
+
+  const handlePitchPipeBtn = (state) => {
+    if (state.oscillator) {
+      state.oscillator.stop();
+      return {...state, oscillator: null}
+    }
+
+    const audioCtx = new AudioContext();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.type = "triangle";
+    oscillator.frequency.value = 440;
+    gainNode.gain.value = 0.5;
+    oscillator.start();
+
+    // TODO automatically stop after 1 second
+    //  need to dynamically get new state
+    //  https://chatgpt.com/share/67716b90-0edc-8005-9d9b-19ead3395852
+    return {...state, oscillator};
+  };
+
   const pitchPipeBtn = h("button", {
     id: "pitchPipeBtn",
     class: "btn btn-secondary mx-2",
     dataBsToggle: "tooltip",
     dataBsPlacement: "bottom",
+    onclick: handlePitchPipeBtn,
     title: "A440"
-  }, [
-    h("i", {class: "bi bi-music-note"}),
-    text("A")
-  ])
+  }, [h("i", {class: "bi bi-music-note"}), text("A")])
+
 
   return h("main", {}, [
     h("div", {class: "d-flex justify-content-center mb-3"}, [
       audioPreview
     ]),
     h("div", {class: "d-flex justify-content-center mb-3"}, [
-      recordStartStopBtn,
-      uploadBtn,
-      pitchPipeBtn,
+      recordStartStopBtn, uploadBtn, pitchPipeBtn
     ])
   ])
 }
 
 
-app({init: state, view, node: recorderDiv})
+const actions = {
+  setRecorder: (state, recorder) => ({...state, recorder}),
+  setBlob: (state, blob) => ({...state, blob}),
+  resetRecorder: (state) => ({...state, recorder: null}),
+  requestRecorder: (state) => {
+    navigator.mediaDevices.getUserMedia({audio: true})
+      .then((stream) => {
+        const recorder = new MediaRecorder(stream, {mimeType: "audio/webm"});
+        let chunks = [];
 
-const audioEl = document.getElementById("audio")
-const recordStartStopBtn = document.getElementById("recordStartStopBtn")
-const uploadBtn = document.getElementById("uploadBtn")
+        recorder.ondataavailable = (event) => {
+          chunks.push(event.data);
+        };
 
-let recorder = null;
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, {type: "audio/webm"});
+          chunks = [];
+          (actions.setBlob(state, blob));  // Dispatch setBlob through dispatch
+        };
 
-let blob = null;
+        recorder.start();
+        (actions.setRecorder(state, recorder));  // Dispatch setRecorder through dispatch
+      })
+      .catch((error) => {
+        console.error("Error accessing microphone:", error);
+        (actions.resetRecorder(state));  // Dispatch resetRecorder through dispatch
+      });
+  },
+};
+
+app({init: initialState, view, actions, node: recorderDiv});
 
 
-recordStartStopBtn.addEventListener("click", async function () {
-  if (recordStartStopBtn.textContent === "Record") {
-    recordStartStopBtn.textContent = "Stop"
-    await startRecording();
-  } else {
-    recordStartStopBtn.textContent = "Record"
-    await stopRecording();
-  }
-});
-
-async function startRecording() {
-  // request permission
-  // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
-  // https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder
-
-  const stream = await navigator.mediaDevices.getUserMedia({audio: true});
-  recorder = new MediaRecorder(stream, {mimeType: "audio/webm"});
-  let chunks = [];
-  recorder.start();
-  recorder.ondataavailable = (event) => {
-    chunks.push(event.data);
-  };
-  recorder.onstop = async () => {
-    blob = new Blob(chunks, {type: "audio/webm"});
-    console.log(blob);
-    chunks = [];
-    const audioURL = window.URL.createObjectURL(blob);
-    audioEl.src = audioURL;
-    audioEl.controls = true;
-    console.log(audioURL);
-  };
-}
-
-async function stopRecording() {
-  recorder.stop();
-  recorder = null;
-  uploadBtn.disabled = false;
-}
-
+/*
 
 uploadBtn.addEventListener("click", async function () {
   if (!audioEl.src) {
@@ -119,34 +144,5 @@ uploadBtn.addEventListener("click", async function () {
   window.location.href = `/p/${key}`
 })
 
-const pitchPipeBtn = document.getElementById("pitchPipeBtn")
-let oscillator = null
 
-function startTone() {
-  if (oscillator) {
-    return
-  }
-  const audioCtx = new AudioContext();
-  oscillator = audioCtx.createOscillator();
-  const gainNode = audioCtx.createGain();
-  oscillator.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
-  oscillator.type = "triangle";
-  oscillator.frequency.value = 440;
-  gainNode.gain.value = 0.5;
-  oscillator.start();
-  setTimeout(stopTone, 1000);
-}
-
-function stopTone() {
-  if (oscillator) {
-    oscillator.stop();
-    oscillator = null;
-  }
-}
-
-pitchPipeBtn.addEventListener("mousedown", startTone);
-pitchPipeBtn.addEventListener("touchstart", startTone);
-// pitchPipeBtn.addEventListener("mouseup", stopTone);
-// pitchPipeBtn.addEventListener("touchend", stopTone);
-// pitchPipeBtn.addEventListener("mouseleave", stopTone); // For mouse leave
+ */
